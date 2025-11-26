@@ -8,6 +8,7 @@ from analysis import (
     monthly_summary,
 )
 
+
 @pytest.mark.parametrize(
     "temps, expected_mean, expected_median, expected_std",
     [
@@ -22,6 +23,7 @@ def test_compute_daily_statistics(temps, expected_mean, expected_median, expecte
     assert median_val == pytest.approx(expected_median)
     assert std_val == pytest.approx(expected_std)
 
+
 @pytest.mark.parametrize("temps", [
     ([np.nan, np.nan]),
     ([np.nan]),
@@ -34,18 +36,27 @@ def test_compute_daily_statistics_nan_cases(temps):
     assert np.isnan(median_val)
     assert np.isnan(std_val)
 
+
 @pytest.mark.parametrize(
     "temps, threshold, expected_count",
     [
-        ([10.0, 11.0, 9.5, 40.0], 2.0, 1),
-        ([5.0, 5.0, 5.0], 2.0, 0),
-        ([1.0, 2.0, 3.0], 5.0, 0),
+        ([10.0, 11.0, 9.5, 40.0], 2.0, 1),  # 40 is the only extreme
+        ([5.0, 5.0, 5.0], 2.0, 0),          # zero std → empty
+        ([1.0, 2.0, 3.0], 5.0, 0),          # no values far enough away
     ],
 )
 def test_identify_extremes(temps, threshold, expected_count):
     df = pd.DataFrame({"temp": temps})
     extremes = identify_extremes(df, "temp", threshold_std=threshold)
     assert len(extremes) == expected_count
+
+
+def test_identify_extremes_correct_value():
+    df = pd.DataFrame({"temp": [10.0, 11.0, 9.5, 40.0]})
+    extremes = identify_extremes(df, "temp", threshold_std=2.0)
+    assert len(extremes) == 1
+    assert extremes["temp"].iloc[0] == 40.0
+
 
 @pytest.mark.parametrize(
     "dates, temps, expected_months",
@@ -54,12 +65,12 @@ def test_identify_extremes(temps, threshold, expected_count):
             pd.to_datetime(["2024-01-01", "2024-01-15", "2024-01-31",
                             "2024-02-01", "2024-02-28"]),
             [0.0, 2.0, 4.0, 10.0, 12.0],
-            2
+            2,
         ),
         (
             pd.to_datetime(["2024-01-10", "2024-01-20"]),
             [5.0, 7.0],
-            1
+            1,
         ),
     ],
 )
@@ -67,6 +78,7 @@ def test_monthly_summary_grouping(dates, temps, expected_months):
     df = pd.DataFrame({"date": dates, "temp": temps})
     result = monthly_summary(df, "date", "temp")
     assert len(result) == expected_months
+
 
 def test_monthly_summary_values():
     dates = pd.to_datetime(
