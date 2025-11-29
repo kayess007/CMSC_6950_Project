@@ -1,13 +1,13 @@
 # CMSC_6950_Project: Climate Data Analysis Project (CMSC 6950)
 
-# Data Source
+## Data Source
 Project - Climate Variability Analysis Using Daily Temperature Records 
 Dataset: Daily Climate Observations, St. John’s West (Station 8403603), 2024.
 Government of Canada  
 https://climate.weather.gc.ca
 
 
-# 1.0 Project Objective 
+## 1.0 Project Objective 
 This project analyzes daily climate observations from the St. John's
 West Weather Station (ID: 8403603) for the year 2024. The dataset is
 obtained from the Government of Canada's Environment and Climate Change
@@ -23,7 +23,7 @@ The analysis explores:
 -   Temperature heatmaps
 
 
-# 2.0 Project Structure
+## 2.0 Project Structure
 
 
 CMSC_6950_Project/
@@ -95,14 +95,7 @@ Individual plots:
     pytest -v
 
 
-## 7.0 Dataset Citation
 
-**Environment and Climate Change Canada (ECCC)**  
-Government of Canada  
-Climate Data Portal  
-https://climate.weather.gc.ca
-
-Dataset: *Daily Climate Observations, St. John’s West (Station 8403603), 2024.*
 
 
 

@@ -44,13 +44,7 @@ def add_rolling_mean(df: pd.DataFrame, date_col: str, temp_col: str,
 
 
 def load_and_process(raw_path: str):
-    """
-    Load the raw CSV, clean it, add a 7-day rolling mean,
-    and save a processed CSV into the project's data/ directory.
 
-    Returns:
-        df, date_col, temp_col, processed_path
-    """
     df = pd.read_csv(raw_path)
 
     df = standardize_columns(df)
@@ -59,8 +53,8 @@ def load_and_process(raw_path: str):
     df = filter_temp_range(df, temp_col)
     df = add_rolling_mean(df, date_col, temp_col)
 
-    # Figure out project root and data directory based on this file's location
-    project_root = Path(__file__).resolve().parents[1]  # src/.. -> project root
+   
+    project_root = Path(__file__).resolve().parents[1]  
     data_dir = project_root / "data"
     data_dir.mkdir(exist_ok=True)
 
@@ -75,7 +69,7 @@ def load_and_process(raw_path: str):
 
 
 if __name__ == "__main__":
-    # Assume the raw file lives in the data/ directory under the project root
+
     project_root = Path(__file__).resolve().parents[1]
     raw = project_root / "data" / "en_climate_daily_NL_8403603_2024_P1D.csv"
 
