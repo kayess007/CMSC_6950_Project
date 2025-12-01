@@ -18,9 +18,11 @@ def load_processed_df():
     df = pd.read_csv(project_root / "data" / PROCESSED_FILE)
     date_col = next(c for c in df.columns if "Date" in c or "date" in c)
     temp_col = next(c for c in df.columns if "Mean Temp" in c or "mean temp" in c)
+    wind_col = next(c for c in df.columns if "gust" in c.lower())
     df[date_col] = pd.to_datetime(df[date_col])
+    df[wind_col] = pd.to_numeric(df[wind_col], errors="coerce")
     df = df.dropna(subset=[date_col, temp_col]).sort_values(date_col)
-    return df, date_col, temp_col, project_root
+    return df, date_col, temp_col, wind_col, project_root
 
 def format_months(ax):
     ax.xaxis.set_major_locator(mdates.MonthLocator())
@@ -36,23 +38,23 @@ def fig1(df, date_col, temp_col, out):
     ax.set_ylabel("Temp (°C)")
     format_months(ax)
     fig.tight_layout()
-    fig.savefig(out / "daily_temperature.png")
+    fig.savefig(out / "fig1_daily_temperature.png")
     plt.close(fig)
 
 def fig2(df, date_col, temp_col, out):
     s = df[temp_col]
     mu, sd = s.mean(), s.std(ddof=1)
     z = (s - mu) / sd
-    extremes = df[z.abs() >= 2.5]
+    extremes = df[z.abs() >= 2.0]
     fig, ax = plt.subplots(figsize=(10, 4))
     ax.plot(df[date_col], df[temp_col])
-    ax.scatter(extremes[date_col], extremes[temp_col])
-    ax.set_title("Extreme Days (|z|>=2.5)")
+    ax.scatter(extremes[date_col], extremes[temp_col], color="red")
+    ax.set_title("Extreme Temperature Days (|z|≥2.0)")
     ax.set_xlabel("Date")
     ax.set_ylabel("Temp (°C)")
     format_months(ax)
     fig.tight_layout()
-    fig.savefig(out / "extreme_days.png")
+    fig.savefig(out / "fig2_extreme_days.png")
     plt.close(fig)
 
 def fig3(df, date_col, temp_col, out):
@@ -61,54 +63,15 @@ def fig3(df, date_col, temp_col, out):
     ax.plot(monthly.index, monthly["mean"])
     ax.plot(monthly.index, monthly["min"])
     ax.plot(monthly.index, monthly["max"])
-    ax.set_title("Monthly Summary")
+    ax.set_title("Monthly Temperature Summary")
     ax.set_xlabel("Month")
     ax.set_ylabel("Temp (°C)")
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
     fig.tight_layout()
-    fig.savefig(out / "monthly_summary.png")
+    fig.savefig(out / "fig3_monthly_summary.png")
     plt.close(fig)
 
 def fig4(df, date_col, temp_col, out):
-    y = df[temp_col].values
-    x = np.arange(len(y))
-    a, b = np.polyfit(x, y, 1)
-    trend = a * x + b
-    fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(df[date_col], df[temp_col])
-    ax.plot(df[date_col], trend, linestyle="--")
-    ax.set_title("Trend Line")
-    ax.set_xlabel("Date")
-    ax.set_ylabel("Temp (°C)")
-    format_months(ax)
-    fig.tight_layout()
-    fig.savefig(out / "trendline.png")
-    plt.close(fig)
-
-def fig5_season_scatter(df, date_col, temp_col, out):
-    df = df.copy()
-    df["DayOfYear"] = df[date_col].dt.dayofyear
-    def season(m):
-        if m in [12, 1, 2]: return "Winter"
-        if m in [3, 4, 5]: return "Spring"
-        if m in [6, 7, 8]: return "Summer"
-        return "Fall"
-    df["Season"] = df[date_col].dt.month.apply(season)
-    season_colors = {"Winter": "blue", "Spring": "green", "Summer": "red", "Fall": "orange"}
-    fig, ax = plt.subplots(figsize=(12, 6))
-    for s, color in season_colors.items():
-        d = df[df["Season"] == s]
-        ax.scatter(d["DayOfYear"], d[temp_col], s=25, color=color, alpha=0.8, label=s)
-    ax.set_xlabel("Day of Year (1-365)")
-    ax.set_ylabel("Temperature (°C)")
-    ax.set_title("Temperature vs. Day of Year Grouped by Season (2024)")
-    ax.grid(True)
-    ax.legend()
-    fig.tight_layout()
-    fig.savefig(out / "season_scatter.png")
-    plt.close(fig)
-
-def fig6_heatmap_day_vs_month(df, date_col, temp_col, out):
     df = df.copy()
     df["Month"] = df[date_col].dt.month
     df["Day"] = df[date_col].dt.day
@@ -116,9 +79,9 @@ def fig6_heatmap_day_vs_month(df, date_col, temp_col, out):
     fig, ax = plt.subplots(figsize=(12, 6))
     c = ax.imshow(heatmap, cmap="viridis", aspect="auto", origin="lower")
     fig.colorbar(c, ax=ax, label="Temperature (°C)")
-    ax.set_title("2D Temperature Heatmap (Day vs Month, 2024)")
+    ax.set_title("2D Temperature Heatmap (Day vs Month)")
     ax.set_xlabel("Month")
-    ax.set_ylabel("Day of Month")
+    ax.set_ylabel("Day")
     ax.set_xticks(np.arange(12))
     ax.set_xticklabels([
         "January", "February", "March", "April", "May", "June",
@@ -127,49 +90,83 @@ def fig6_heatmap_day_vs_month(df, date_col, temp_col, out):
     ax.set_yticks(np.arange(0, 31, 5))
     ax.set_yticklabels(range(1, 32, 5))
     fig.tight_layout()
-    fig.savefig(out / "heatmap_day_vs_month.png")
+    fig.savefig(out / "fig4_heatmap.png")
     plt.close(fig)
 
-def fig7_histogram(df, temp_col, out):
+def fig5(df, temp_col, out):
     temps = df[temp_col]
     plt.figure(figsize=(10, 6))
-    plt.hist(temps, bins=30, color="orange", edgecolor="black", alpha=0.85)
+    plt.hist(temps, bins=30, color="orange", edgecolor="black")
     plt.xlabel("Temperature (°C)")
     plt.ylabel("Frequency")
     plt.title("Histogram of Daily Temperatures (2024)")
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.tight_layout()
-    plt.savefig(out / "histogram_temperature.png")
+    plt.savefig(out / "fig5_temperature_histogram.png")
     plt.close()
 
-def fig8_monthly_mean_bar(df, date_col, temp_col, out):
+
+def fig6(df, date_col, wind_col, out):
     df = df.copy()
-    df[date_col] = pd.to_datetime(df[date_col])
     df["Month"] = df[date_col].dt.month
-    monthly_mean = df.groupby("Month")[temp_col].mean()
+
+    fig, ax = plt.subplots(figsize=(12, 5))
+
+    for m in range(1, 13):
+        d = df[df["Month"] == m]
+
+        x = np.random.normal(m, 0.12, size=len(d))
+        ax.scatter(x, d[wind_col], s=25, alpha=0.7)
+
+    ax.set_xticks(range(1, 13))
+    ax.set_xticklabels(["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"])
+    ax.set_title("Daily Max Wind Gusts Grouped by Month")
+    ax.set_xlabel("Month")
+    ax.set_ylabel("Wind Gust (km/h)")
+
+    fig.tight_layout()
+    fig.savefig(out / "fig6_wind_gust_jitter.png")
+    plt.close(fig)
+
+
+def fig7(df, wind_col, out):
     plt.figure(figsize=(10, 5))
-    plt.bar(monthly_mean.index, monthly_mean.values, color="skyblue", edgecolor="black")
-    plt.xlabel("Month")
-    plt.ylabel("Mean Temperature (°C)")
-    plt.title("Monthly Average Temperatures (2024)")
-    plt.xticks(range(1, 13))
+    plt.hist(df[wind_col].dropna(), bins=20, color="orange", edgecolor="black")
+    plt.xlabel("Wind Gust (km/h)")
+    plt.ylabel("Frequency")
+    plt.title("Histogram of Max Wind Gusts")
     plt.tight_layout()
-    plt.savefig(out / "monthly_mean_bar.png")
+    plt.savefig(out / "fig7_wind_gust_histogram.png")
     plt.close()
+
+def fig8(df, date_col, temp_col, wind_col, out):
+    fig, ax1 = plt.subplots(figsize=(10, 4))
+    ax1.plot(df[date_col], df[temp_col], color="orange")
+    ax1.set_ylabel("Temperature (°C)")
+    ax2 = ax1.twinx()
+    ax2.scatter(df[date_col], df[wind_col], s=14, color="blue", alpha=0.6)
+    ax2.set_ylabel("Wind Gust (km/h)")
+    ax1.set_title("Temperature vs Wind Gust (Dual Axis)")
+    format_months(ax1)
+    fig.tight_layout()
+    fig.savefig(out / "fig8_temp_vs_wind.png")
+    plt.close(fig)
 
 def main():
     my_style()
-    df, date_col, temp_col, project_root = load_processed_df()
+    df, date_col, temp_col, wind_col, project_root = load_processed_df()
     out = project_root / "figures"
     out.mkdir(exist_ok=True)
+
     fig1(df, date_col, temp_col, out)
     fig2(df, date_col, temp_col, out)
     fig3(df, date_col, temp_col, out)
     fig4(df, date_col, temp_col, out)
-    fig5_season_scatter(df, date_col, temp_col, out)
-    fig6_heatmap_day_vs_month(df, date_col, temp_col, out)
-    fig7_histogram(df, temp_col, out)
-    fig8_monthly_mean_bar(df, date_col, temp_col, out)
+    fig5(df, temp_col, out)   
+    fig6(df, date_col, wind_col, out)
+    fig7(df, wind_col, out)
+    fig8(df, date_col, temp_col, wind_col, out)
+
     print("Generated all 8 figures in /figures")
 
 if __name__ == "__main__":

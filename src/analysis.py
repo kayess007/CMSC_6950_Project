@@ -18,22 +18,19 @@ def compute_daily_statistics(df: pd.DataFrame, temp_col: str):
     return mean_val, median_val, std_val
 
 
-def identify_extremes(df: pd.DataFrame, temp_col: str, threshold_std: float = 2.0):
-
+def identify_extremes(df: pd.DataFrame, temp_col: str, z_threshold: float = 2.0):
     s = df[temp_col].dropna()
     if len(s) == 0:
         return df.iloc[0:0]
 
-    q1 = s.quantile(0.25)
-    q3 = s.quantile(0.75)
-    iqr = q3 - q1
+    mean_val = s.mean()
+    std_val = s.std(ddof=1)
 
-    lower = q1 - threshold_std * iqr
-    upper = q3 + threshold_std * iqr
+    if std_val == 0 or np.isnan(std_val):
+        return df.iloc[0:0]
 
-    mask = (df[temp_col] < lower) | (df[temp_col] > upper)
-    return df[mask]
-
+    z = (s - mean_val) / std_val
+    return df[(z.abs() >= z_threshold)]
 
 
 def monthly_summary(df: pd.DataFrame, date_col: str, temp_col: str) -> pd.DataFrame:

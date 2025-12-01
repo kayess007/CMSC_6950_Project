@@ -38,22 +38,23 @@ def test_compute_daily_statistics_nan_cases(temps):
 
 
 @pytest.mark.parametrize(
-    "temps, threshold, expected_count",
+    "temps, z_threshold, expected_count",
     [
-        ([10.0, 11.0, 9.5, 40.0], 2.0, 1),  # 40 is the only extreme
-        ([5.0, 5.0, 5.0], 2.0, 0),          # zero std → empty
-        ([1.0, 2.0, 3.0], 5.0, 0),          # no values far enough away
+        ([10.0, 11.0, 9.5, 40.0], 2.0, 1),
+        ([5.0, 5.0, 5.0], 2.0, 0),
+        ([1.0, 2.0, 3.0], 5.0, 0),
     ],
 )
-def test_identify_extremes(temps, threshold, expected_count):
+def test_identify_extremes(temps, z_threshold, expected_count):
     df = pd.DataFrame({"temp": temps})
-    extremes = identify_extremes(df, "temp", threshold_std=threshold)
+    extremes = identify_extremes(df, "temp", z_threshold=z_threshold)
     assert len(extremes) == expected_count
+
 
 
 def test_identify_extremes_correct_value():
     df = pd.DataFrame({"temp": [10.0, 11.0, 9.5, 40.0]})
-    extremes = identify_extremes(df, "temp", threshold_std=2.0)
+    extremes = identify_extremes(df, "temp", z_threshold=2.0)
     assert len(extremes) == 1
     assert extremes["temp"].iloc[0] == 40.0
 

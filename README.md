@@ -82,12 +82,14 @@ Generate all:
 
 Individual plots:
 
-    python src/figure_plot.py --plot daily
-    python src/figure_plot.py --plot extremes
-    python src/figure_plot.py --plot monthly
-    python src/figure_plot.py --plot trend
-    python src/figure_plot.py --plot heatmap
-    python src/figure_plot.py --plot season
+    python src/figure_plot.py --plot fig1
+    python src/figure_plot.py --plot fig2
+    python src/figure_plot.py --plot fig3
+    python src/figure_plot.py --plot fig4
+    python src/figure_plot.py --plot fig5
+    python src/figure_plot.py --plot fig6
+    python src/figure_plot.py --plot fig7
+    python src/figure_plot.py --plot fig8
 
 
 ## 6.0 Running Unit Tests
