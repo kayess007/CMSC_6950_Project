@@ -44,16 +44,20 @@ def add_rolling_mean(df: pd.DataFrame, date_col: str, temp_col: str,
 
 
 def load_and_process(raw_path: str):
-
     df = pd.read_csv(raw_path)
     df = standardize_columns(df)
+
     df, date_col = parse_dates(df)
     df, temp_col = coerce_temperature(df)
     df = filter_temp_range(df, temp_col)
     df = add_rolling_mean(df, date_col, temp_col)
-    df = df.rename(columns={"Spd of Max Gust (km/h)": "wind_gust"})
-   
-    project_root = Path(__file__).resolve().parents[1]  
+
+    # Standardize gust column safely
+    gust_cols = [c for c in df.columns if "gust" in c.lower()]
+    if gust_cols:
+        df = df.rename(columns={gust_cols[0]: "wind_gust"})
+
+    project_root = Path(__file__).resolve().parents[1]
     data_dir = project_root / "data"
     data_dir.mkdir(exist_ok=True)
 
@@ -68,7 +72,6 @@ def load_and_process(raw_path: str):
 
 
 if __name__ == "__main__":
-
     project_root = Path(__file__).resolve().parents[1]
     raw = project_root / "data" / "en_climate_daily_NL_8403603_2024_P1D.csv"
 
