@@ -41,12 +41,13 @@ def format_months(ax):
 
 def fig1(df, date_col, temp_col, out):
     fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(df[date_col], df[temp_col])
+    ax.plot(df[date_col], df[temp_col], label="Daily Temperature")
     if "Rolling_7d" in df.columns:
-        ax.plot(df[date_col], df["Rolling_7d"])
+        ax.plot(df[date_col], df["Rolling_7d"], label="7-Day Rolling Mean")
     ax.set_title("Daily Temperature (2024)")
     ax.set_xlabel("Date")
     ax.set_ylabel("Temp (°C)")
+    ax.legend()
     format_months(ax)
     fig.tight_layout()
     fig.savefig(out / "fig1_daily_temperature.png")
@@ -59,11 +60,12 @@ def fig2(df, date_col, temp_col, out):
     extremes = df[((s - mu) / sd).abs() >= 2.0]
 
     fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(df[date_col], df[temp_col])
-    ax.scatter(extremes[date_col], extremes[temp_col], color="red")
+    ax.plot(df[date_col], df[temp_col], label="Daily Temperature")
+    ax.scatter(extremes[date_col], extremes[temp_col], color="red", label="Extreme Days (|z| ≥ 2)")
     ax.set_title("Extreme Temperature Days (|z|≥2.0)")
     ax.set_xlabel("Date")
     ax.set_ylabel("Temp (°C)")
+    ax.legend()
     format_months(ax)
     fig.tight_layout()
     fig.savefig(out / "fig2_extreme_days.png")
@@ -74,12 +76,13 @@ def fig3(df, date_col, temp_col, out):
     monthly = df.set_index(date_col)[temp_col].resample("M").agg(["mean", "min", "max"])
 
     fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(monthly.index, monthly["mean"])
-    ax.plot(monthly.index, monthly["min"])
-    ax.plot(monthly.index, monthly["max"])
+    ax.plot(monthly.index, monthly["mean"], label="Mean")
+    ax.plot(monthly.index, monthly["min"], label="Min")
+    ax.plot(monthly.index, monthly["max"], label="Max")
     ax.set_title("Monthly Temperature Summary")
     ax.set_xlabel("Month")
     ax.set_ylabel("Temp (°C)")
+    ax.legend()
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
     fig.tight_layout()
     fig.savefig(out / "fig3_monthly_summary.png")
@@ -99,12 +102,10 @@ def fig4(df, date_col, temp_col, out):
     ax.set_title("2D Temperature Heatmap (Day vs Month)")
     ax.set_xlabel("Month")
     ax.set_ylabel("Day")
-
     ax.set_xticks(np.arange(12))
     ax.set_xticklabels(["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"])
     ax.set_yticks(np.arange(0, 31, 5))
     ax.set_yticklabels(range(1, 32, 5))
-
     fig.tight_layout()
     fig.savefig(out / "fig4_heatmap.png")
     plt.close(fig)
@@ -128,17 +129,21 @@ def fig6(df, date_col, wind_col, out):
 
     fig, ax = plt.subplots(figsize=(12, 5))
 
+    scatter_points = []
+    labels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
     for m in range(1, 13):
         d = df[df["Month"] == m]
         x = np.random.normal(m, 0.12, size=len(d))
-        ax.scatter(x, d[wind_col], s=25, alpha=0.7)
+        sc = ax.scatter(x, d[wind_col], s=25, alpha=0.7)
+        scatter_points.append(sc)
 
     ax.set_xticks(range(1, 13))
-    ax.set_xticklabels(["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"])
+    ax.set_xticklabels(labels)
     ax.set_title("Daily Max Wind Gusts Grouped by Month")
     ax.set_xlabel("Month")
     ax.set_ylabel("Wind Gust (km/h)")
-
+    ax.legend(scatter_points, labels, title="Month")
     fig.tight_layout()
     fig.savefig(out / "fig6_wind_gust_jitter.png")
     plt.close(fig)
@@ -157,15 +162,19 @@ def fig7(df, wind_col, out):
 
 def fig8(df, date_col, temp_col, wind_col, out):
     fig, ax1 = plt.subplots(figsize=(10, 4))
-    ax1.plot(df[date_col], df[temp_col], color="orange")
+    temp_line = ax1.plot(df[date_col], df[temp_col], color="orange", label="Temperature (°C)")
     ax1.set_ylabel("Temperature (°C)")
 
     ax2 = ax1.twinx()
-    ax2.scatter(df[date_col], df[wind_col], s=14, color="blue", alpha=0.6)
+    wind_scatter = ax2.scatter(df[date_col], df[wind_col], s=14, color="blue", alpha=0.6, label="Wind Gust (km/h)")
     ax2.set_ylabel("Wind Gust (km/h)")
 
     ax1.set_title("Temperature vs Wind Gust")
     format_months(ax1)
+
+    handles = temp_line + [wind_scatter]
+    labels = [h.get_label() for h in handles]
+    ax1.legend(handles, labels, loc="upper right")
 
     fig.tight_layout()
     fig.savefig(out / "fig8_temp_vs_wind.png")
